@@ -7,8 +7,9 @@ services:
   ports:
   - 5000:5000
   env_file:
-    - ./.env.dev
+  - ./.env.dev
   volumes:
+  - ./log:/app/log
   - ./app:/app
 
  mysqldb:
@@ -16,7 +17,7 @@ services:
   ports:
   - 3307:3306
   env_file:
-    - ./.env.db
+  - ./.env.db
   volumes:
   - ./initdb.d:/docker-entrypoint-initdb.d
 

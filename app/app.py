@@ -2,16 +2,28 @@ from flask import Flask, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 import os
-from pyparsing import col
+import logging
+import traceback
+
 if os.getenv('DEBUG') == '1':
     from test_model import Person
 else:
     from mysql_model import Person
 
 app = Flask(__name__)
+
+app.logger.setLevel(logging.DEBUG)
+log_handler = logging.FileHandler(os.getenv('LOG_FILE'))
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s - %(name)s - %(funcName)s - %(message)s')
+log_handler.setFormatter(formatter)
+log_handler.setLevel(logging.DEBUG)
+app.logger.addHandler(log_handler)
+log = app.logger
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLITE_URI') if os.getenv('DEBUG') == '1' else os.getenv('MYSQL_URI')
 app.config["PORT"] = os.getenv("PORT")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
 
@@ -82,6 +94,12 @@ def person_search():
 
 @app.route('/person_result')
 def person_result():
-    search_size = request.args.get("search_size")
-    persons = db.session.query(Person).filter(Person.size >= search_size)
+    try:
+        search_size = request.args.get("search_size")
+        log.debug(f'search_size:{search_size}')
+        search_size = int(search_size)
+        persons = db.session.query(Person).filter(Person.size >= search_size)
+    except Exception:
+        log.error(traceback.format_exec())
+
     return render_template('./person_result.html', persons=persons, search_size=search_size)
